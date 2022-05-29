@@ -5,7 +5,7 @@ L foo
 L j
 I 5 NUMBER
 P A
-D 5
+D j
 D i
 P A
 S

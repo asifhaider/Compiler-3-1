@@ -8,7 +8,7 @@ class ScopeTable
 private:
     int totalBuckets;
     int childScopeCount;
-    SymbolInfo *hashTable;
+    SymbolInfo **hashTable;
     ScopeTable *parentScope;
     string ID;
 public:
@@ -18,24 +18,24 @@ public:
     SymbolInfo *lookupSymbol(string symbol);
     bool deleteSymbol(string symbol);
     void printScopeTable();
-    ScopeTable *getParentScope() const;
     ~ScopeTable();
 
     int getTotalBuckets() const;
-
+    ScopeTable *getParentScope() const;
     const string &getId() const;
-
     int getChildScopeCount() const;
-
     void setChildScopeCount(int childScopeCount);
-
     void setParentScope(ScopeTable *parentScope);
 };
 
 // Constructor 
 ScopeTable::ScopeTable(int n, string id)
 {
-    this->hashTable = new SymbolInfo[n];
+    this->hashTable = new SymbolInfo* [n];
+    for(int i=0; i<n; i++)
+    {
+        this->hashTable[i] = nullptr;
+    }
     this->totalBuckets = n;
     this->parentScope = nullptr;
     this->ID = id;
@@ -46,9 +46,9 @@ ScopeTable::ScopeTable(int n, string id)
 // sdbm hash function
 uint32_t ScopeTable::computeHash(string symbol)
 {
-    unsigned long hashValue = 0;
-    int c;
-    for(int i=0; i<symbol.size(); i++)
+    uint32_t hashValue = 0;
+    uint32_t c;
+    for(uint32_t i=0; i<symbol.size(); i++)
     {
         c=symbol[i];
         hashValue = c + (hashValue << 6) + (hashValue << 16) - hashValue;
@@ -60,13 +60,13 @@ bool ScopeTable::insertSymbol(SymbolInfo *symbol)
 {
     uint32_t pos = this->computeHash(symbol->getSymbolName());
     int count = 0;
-    SymbolInfo *current = this->hashTable[pos].getNextSymbolPointer();
-    if(current == nullptr){
-        this->hashTable[pos].setNextSymbolPointer(symbol);
+    if(this->hashTable[pos] == nullptr){
+        this->hashTable[pos] = symbol;
         cout << "Inserted in ScopeTable# " << this->ID << " at position " << to_string(pos) << ", " << count << endl << endl;
         return true;
     } else{
         count++;
+        SymbolInfo *current = this->hashTable[pos];
         if(current->getSymbolName() == symbol->getSymbolName())
         {
             cout << "This word already exists" << endl;
@@ -88,7 +88,6 @@ bool ScopeTable::insertSymbol(SymbolInfo *symbol)
         cout << "Inserted in ScopeTable# " << this->ID << " at position " << to_string(pos) << ", " << count << endl << endl;
         return true;
     }
-
 }
 
  SymbolInfo *ScopeTable::lookupSymbol(string symbol)
@@ -96,7 +95,7 @@ bool ScopeTable::insertSymbol(SymbolInfo *symbol)
      for(int i=0; i<this->totalBuckets; i++)
      {
          int count = 0;
-         SymbolInfo *current = this->hashTable[i].getNextSymbolPointer();
+         SymbolInfo *current = this->hashTable[i];
          while(current != nullptr)
          {
              if(current->getSymbolName() == symbol)
@@ -119,40 +118,38 @@ bool ScopeTable::insertSymbol(SymbolInfo *symbol)
          cout << "Found it" << endl;
          for (int i = 0; i < this->totalBuckets; i++) {
              int count = 0;
-             SymbolInfo *next = this->hashTable[i].getNextSymbolPointer();
+             SymbolInfo *current = this->hashTable[i];
 
              // hashed position empty
-             if(next== nullptr)
+             if(current== nullptr)
                  continue;
 
-             SymbolInfo *current = new SymbolInfo;
-             if(next->getSymbolName()==symbol){
-                 this->hashTable[i].setNextSymbolPointer(nullptr);
+             // first element delete
+             if(current->getSymbolName()==symbol){
+                 this->hashTable[i] = current->getNextSymbolPointer();
+                 delete current;
+                 cout << "Deleted entry at position " << i << ", " << count
+                      << " in the current ScopeTable" << endl << endl;
+                 return true;
              } else {
-                 while (next->getSymbolName() != symbol) {
+                 count++;
+                 SymbolInfo *next = current->getNextSymbolPointer();
+                 while (next != nullptr) {
+                     if (next->getSymbolName() == symbol) {
+                         current->setNextSymbolPointer(next->getNextSymbolPointer());
+                         cout << "Deleted entry at position " << i << ", " << count
+                              << " in the current ScopeTable" << endl << endl;
+                         delete next;
+                         return true;
+                     }
                      current = next;
                      next = current->getNextSymbolPointer();
-                     count ++ ;
-                     if (next == nullptr) {
-                         break;
-                     }
+                     count++;
                  }
-                 if(next== nullptr)
-                     continue;
-                 else{
-                     current->setNextSymbolPointer(next->getNextSymbolPointer());
-                     delete next;
-                     cout << "Deleted entry at position " << i << ", " << count
-                          << " in the current ScopeTable" << endl << endl;
-                     return true;
-                 }
+                 delete next;
              }
-             current->setNextSymbolPointer(next->getNextSymbolPointer());
-             delete next;
-             cout << "Deleted entry at position " << i << ", " << count
-                  << " in the current ScopeTable" << endl << endl;
-             return true;
          }
+     return true;
      }
  }
 
@@ -160,7 +157,7 @@ bool ScopeTable::insertSymbol(SymbolInfo *symbol)
     cout << "ScopeTable# " << this->ID << endl << endl;
     for(int i=0; i<this->totalBuckets; i++){
         cout << i << " --> ";
-        SymbolInfo *current = this->hashTable[i].getNextSymbolPointer();
+        SymbolInfo *current = this->hashTable[i];
         while(current!= nullptr){
             cout << "< " << current->getSymbolName() << " : " << current->getSymbolType() << " >";
             current = current->getNextSymbolPointer();
@@ -175,6 +172,11 @@ ScopeTable::~ScopeTable(){
     if(this->getId()=="1")
         cout << "Destroying the First Scope" << endl;
     cout << "Destroying the ScopeTable" << endl << endl;
+    delete this->parentScope;
+    for (int i=0; i<this->totalBuckets; i++){
+        delete this->hashTable[i];
+    }
+    delete[] this->hashTable;
 }
 
 ScopeTable *ScopeTable::getParentScope() const {

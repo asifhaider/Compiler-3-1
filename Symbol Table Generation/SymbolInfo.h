@@ -12,21 +12,15 @@ private:
 public:
     SymbolInfo();
     SymbolInfo(string name, string type);
-    void setSymbolName(string name);
     string getSymbolName();
-    void setSymbolType(string type);
     string getSymbolType();
     void setNextSymbolPointer(SymbolInfo *symbolInfo);
     SymbolInfo *getNextSymbolPointer();
+    ~SymbolInfo();
 };
 
-// Constructor with null next
- SymbolInfo::SymbolInfo()
- {
-     this->symbolName = "";
-     this->symbolType = "";
-     this->nextSymbolPointer = nullptr;
- }
+SymbolInfo::SymbolInfo() {
+}
 
 SymbolInfo::SymbolInfo(string name, string type)
 {
@@ -36,19 +30,9 @@ SymbolInfo::SymbolInfo(string name, string type)
 }
 
 // Getter Setters
-void SymbolInfo::setSymbolName(string name)
-{
-    this->symbolName = name;
-}
-
 string SymbolInfo::getSymbolName()
 {
     return this->symbolName;
-}
-
-void SymbolInfo::setSymbolType(string type)
-{
-    this->symbolType = type;
 }
 
 string SymbolInfo::getSymbolType()
@@ -65,3 +49,7 @@ SymbolInfo *SymbolInfo::getNextSymbolPointer()
 {
     return this->nextSymbolPointer;
 }
+
+SymbolInfo::~SymbolInfo(){
+    delete this->nextSymbolPointer;
+ }

@@ -58,7 +58,6 @@ void SymbolTable::enterScope() {
     ScopeTable *newScope = new ScopeTable(this->currentScopeTable->getTotalBuckets(), newID);
     newScope->setParentScope(this->currentScopeTable);
     this->currentScopeTable = newScope;
-
 }
 
 void SymbolTable::printCurrentScopeTable() {
@@ -77,7 +76,8 @@ void SymbolTable::printAllScopeTable() {
 
 void SymbolTable::exitScope() {
     ScopeTable *oldScope = this->currentScopeTable->getParentScope();
-    delete this->currentScopeTable;
+    currentScopeTable->setParentScope(nullptr);
+    delete currentScopeTable;
     this->currentScopeTable = oldScope;
 }
 
@@ -85,6 +85,7 @@ bool SymbolTable::removeSymbol(string symbol) {
     bool isDeleted = this->currentScopeTable->deleteSymbol(symbol);
     if(!isDeleted)
         cout << symbol << " is not found" << endl << endl;
+    return isDeleted;
 }
 
 SymbolTable::~SymbolTable() {
